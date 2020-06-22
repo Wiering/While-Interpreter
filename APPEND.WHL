@@ -1,0 +1,13 @@
+read X;
+  A := hd X;
+  Y := tl X;
+  B := nil;
+  while A do
+    B := cons (hd A) B;
+    A := tl A;
+  while B do
+    Y := cons (hd B) Y;
+    B := tl B;
+write Y
+
+

@@ -1,0 +1,9 @@
+(* specializer: [spec(p.s)](d) = [p](s.d) *)
+
+read PSD;
+  PS := cons (hd PSD) (hd (tl PSD));
+  D := tl (tl PSD);
+  P := int (PS);
+  PD := cons P D;
+  Y := int (PD);
+write Y

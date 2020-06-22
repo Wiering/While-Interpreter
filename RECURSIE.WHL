@@ -1,0 +1,6 @@
+read X;
+  Z := X;
+  while Z do
+    Y := cons (recursie (tl X)) (hd X);
+    Z := nil;
+write Y;

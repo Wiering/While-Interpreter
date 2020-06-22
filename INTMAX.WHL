@@ -1,0 +1,224 @@
+(*
+    WHILE Interpreter
+    (C) 1998, Mike Wiering
+*)
+
+(*
+    INTMAX.WHL
+
+    Input must have the following format:
+
+      ((P.d).M)
+
+    where:
+      P      =  WHILE program
+      d      =  input data
+      M      =  maximum number of assignments before P is halted
+*)
+
+read PdM;
+  Max := cons nil (tl PdM);
+
+  (* initialize variables here for debugging *)
+
+  VarList := nil;
+  Code := nil;
+  Stack := nil;
+  CodeStack := nil;
+
+  (* Pd = (Program.Data) *)
+
+  Pd := hd PdM;
+  Program := hd Pd;
+  Data := tl Pd;
+
+  (* Program = ((var InputVar) Code (var OutputVar)) *)
+
+  InputVar := tl (hd Program);
+  Code := hd (tl Program);
+  OutputVar := tl (hd (tl (tl Program)));
+
+  (* not needed anymore *)
+
+  PdM := nil;
+  Pd := nil;
+  Program := nil;
+
+  (* insert Data into VarList, at position InputVar (usually 1) *)
+
+  VarList := cons Data nil;
+  while tl InputVar do
+    VarList := cons nil VarList;
+    InputVar := tl InputVar;
+
+  (* main loop *)
+
+  while Code do
+
+    (* (; C1 C2) -> Push (C2); Code := C1 *)
+
+    while =? (hd Code) (quote ;) do
+      CodeStack := cons (hd (tl (tl Code))) CodeStack;
+      Code := hd (tl Code);
+
+    (* (:= (var V) E) -> VarName := V; Code := E; Push (assignment) *)
+
+    while =? (hd Code) (quote :=) do
+      VarName := tl (hd (tl Code));
+      Code := hd (tl (tl Code));
+      CodeStack := cons assignment CodeStack;
+
+    (* Code = (while E C) -> Code := E; Push (runwhile, Code) *)
+
+    while =? (hd Code) (quote while) do
+      CodeStack := cons (quote runwhile) (cons Code CodeStack);
+      Code := hd (tl Code);
+
+    (* (=? E1 E2) -> Code := E1; Push (E2, compare) *)
+
+    while =? (hd Code) (quote =?) do
+      CodeStack := cons (hd (tl (tl Code))) (cons compare CodeStack);
+      Code := hd (tl Code);
+
+    (* (cons E1 E2) -> Code := E1; Push (E2, runcons) *)
+
+    while =? (hd Code) (quote cons) do
+      CodeStack := cons (hd (tl (tl Code))) (cons runcons CodeStack);
+      Code := hd (tl Code);
+
+    (* (hd E) -> Code := E; Push (head) *)
+
+    while =? (hd Code) (quote hd) do
+      CodeStack := cons head CodeStack;
+      Code := hd (tl Code);
+
+    (* (tl E) -> Code := E; Push (tail) *)
+
+    while =? (hd Code) (quote tl) do
+      CodeStack := cons tail CodeStack;
+      Code := hd (tl Code);
+
+    (* (var V) -> Push (var V) *)
+
+    while =? (hd Code) (quote var) do
+      Var := (tl Code);
+      V := VarList;
+      while tl Var do
+        V := tl V;
+        Var := tl Var;
+      Stack := cons (hd V) Stack;
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+    (* (quote X) -> Push (X) *)
+
+    while =? (hd Code) (quote quote) do
+      Quote := hd (tl Code);
+      Stack := cons Quote Stack;
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+    (* runwhile -> Pop (E); if E then Pop (C); Code := C else skip *)
+
+    while =? Code (quote runwhile) do
+      Expr := hd Stack;
+      ExitLoop := true;
+      while Expr do
+        ExitLoop := false;
+
+        (* CodeStack contains (while E C), Code := C *)
+
+        Code := hd (tl (tl (hd CodeStack)));
+        Expr := false;
+
+      while ExitLoop do
+
+        (* remove (while E C) from CodeStack *)
+
+        CodeStack := tl CodeStack;
+        Code := hd CodeStack;
+        CodeStack := tl CodeStack;
+        ExitLoop := false;
+      Stack := tl Stack;
+
+    (* assignment -> Pop (E); var VarName := E *)
+
+    while =? Code (quote assignment) do
+
+      (* insert value into VarList at position VarName *)
+
+      V := nil;
+      while VarName do
+        VarName := tl VarName;
+        V := cons (hd VarList) V;
+        VarList := tl VarList;
+      V := cons (hd Stack) (tl V);
+      W := nil;
+      while V do
+        W := cons (hd V) W;
+        V := tl V;
+      V := nil;
+      while W do
+        V := cons (hd W) V;
+        W := tl W;
+      while V do
+        VarList := cons (hd V) VarList;
+        V := tl V;
+
+      (* count assignments *)
+
+      Max := tl Max;
+
+      M := Max;
+      while =? M nil do
+        CodeStack := nil;
+        Halted := true;
+        M := true;
+
+      Stack := tl Stack;
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+    (* head -> Pop (E); Push (hd E) *)
+
+    while =? Code (quote head) do
+      Stack := cons (hd (hd Stack)) (tl Stack);
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+    (* tail -> Pop (E); Push (tl E) *)
+
+    while =? Code (quote tail) do
+      Stack := cons (tl (hd Stack)) (tl Stack);
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+    (* compare -> Pop (E1, E2); Push (=? E1 E2) *)
+
+    while =? Code (quote compare) do
+      Stack := cons (=? (hd (tl Stack)) (hd Stack)) (tl (tl Stack));
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+    (* runcons -> Pop (E1, E2); Push (cons E1 E2) *)
+
+    while =? Code (quote runcons) do
+      Stack := cons (cons (hd (tl Stack)) (hd Stack)) (tl (tl Stack));
+      Code := hd CodeStack;
+      CodeStack := tl CodeStack;
+
+  (* finally, write value of (var OutputVar) *)
+
+  V := VarList;
+  while tl OutputVar do
+    V := tl V;
+    OutputVar := tl OutputVar;
+  Output := hd V;
+
+  (* display "halted" if program was not ready *)
+
+  while Halted do
+    Output := halted;
+    Halted := false;
+
+write Output;

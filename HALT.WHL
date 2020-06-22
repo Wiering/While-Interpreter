@@ -1,0 +1,6 @@
+(* returns true if input program stops *)
+
+read Pd;
+  X := int (Pd);
+  Y := true;
+write Y

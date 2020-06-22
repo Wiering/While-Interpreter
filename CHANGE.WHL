@@ -1,0 +1,16 @@
+(* change.whl modifies a program, adds X := X; after read X; *)
+
+read Pd;
+  P := hd Pd;
+  D := tl Pd;
+  I := hd P;
+  C := hd (tl P);
+  O := (tl (tl P));
+
+  A := cons I (cons I nil);
+  A := cons (quote :=) A;
+  C := cons (quote ;) (cons A (cons C nil));
+
+  P := cons I (cons C O);
+  Pd := cons P D;
+write Pd
