@@ -1,8 +1,6 @@
 # WHILE interpreter
 
-Introduction
-
-This is a school project from 1998. The objective was to write an interpreter for the language WHILE in Turbo Pascal, and then
+This is an old school project from 1998. The objective was to write an interpreter for the language WHILE in Turbo Pascal, and then
 write a version of the interpreter in WHILE itself.
 
 ## WI / XWI
@@ -133,17 +131,17 @@ will convert the parameters into data files and pass them to the interpreter.
 For example, this will run REVERSE.WHL with the parameters (a b):
 ```
     int reverse - (a b)
-    (b a)
+    Output: (b a)
 ```
 And this will convert that program into data and run it in the WHILE interpreter INT.WHL:
 ```
     int int reverse - (a b)
-    (b a)
+    Output: (b a)
 ```
 You can even let INT.WHL interpret itself (which takes a very long time):
 ```
     int int int reverse - (a b)
-    (b a)
+    Output: (b a)
 ```
 
 
